@@ -36,39 +36,15 @@ def build_note_dictionaries(note_names, add_octave_no=True):
 	return midi_to_name, name_to_midi
 
 def build_note_callbacks(note_name, name_to_midi, midi_outputs):
-	def action_fn_pressed():
-		msg = mido.Message("note_on", note=name_to_midi[note_name], velocity=80)
-		for o in midi_outputs:
-			o.send(msg)
-	def action_fn_released():
-		msg = mido.Message("note_off", note=name_to_midi[note_name])
-		for o in midi_outputs:
-			o.send(msg)
+	# Construire des callbacks pour bouton appuyé et relâché
 	return action_fn_pressed, action_fn_released
 
 def build_chord_callbacks(chord, chord_notes, name_to_midi, midi_outputs):
-	def action_fn_pressed():
-		for note in chord_notes[chord]:
-			msg = mido.Message("note_on", note=name_to_midi[note], velocity=80)
-			for o in midi_outputs:
-				o.send(msg)
-	def action_fn_released():
-		for note in chord_notes[chord]:
-			msg = mido.Message("note_off", note=name_to_midi[note])
-			for o in midi_outputs:
-				o.send(msg)
+	# Construire des callbacks pour bouton appuyé et relâché
 	return action_fn_pressed, action_fn_released
 
 def build_custom_action_callbacks(action_name, custom_actions, midi_outputs):
-	pressed, released = None, None
-	if custom_actions[action_name][True] is not None:
-		def action_fn_pressed():
-			custom_actions[action_name][True](midi_outputs)
-		pressed = action_fn_pressed
-	if custom_actions[action_name][False] is not None:
-		def action_fn_released():
-			custom_actions[action_name][False](midi_outputs)
-		released = action_fn_released
+	# Construire des callbacks pour bouton appuyé et relâché
 	return pressed, released
 
 def load_input_mappings(filename, name_to_midi, chord_notes, midi_outputs, custom_actions={}):
@@ -79,17 +55,8 @@ def load_input_mappings(filename, name_to_midi, chord_notes, midi_outputs, custo
 	mappings = {}
 	for gamepad_input in gamepad_section:
 		action_name = gamepad_section[gamepad_input]
-		if action_name in name_to_midi:
-			pressed, released = build_note_callbacks(action_name, name_to_midi, midi_outputs)
-			mappings[gamepad_input] = {True: pressed, False: released}
-		elif action_name in chord_notes:
-			pressed, released = build_chord_callbacks(action_name, chord_notes, name_to_midi, midi_outputs)
-			mappings[gamepad_input] = {True: pressed, False: released}
-		elif action_name in custom_actions:
-			pressed, released = build_custom_action_callbacks(action_name, custom_actions, midi_outputs)
-			mappings[gamepad_input] = {True: pressed, False: released}
+		# Construire des callbacks pour l'action appropriée et l'ajouter au mapping.
 	return mappings
-
 
 
 def main():
@@ -97,10 +64,9 @@ def main():
 	midi_outputs = (mido.open_output("UM-ONE 3"), mido.open_output("UnPortMIDI 4"))
 	midi_input = mido.open_input("UM-ONE 0")
 
-	notes_data = json.load(open("notes.json", "r"))
-	note_names = notes_data["solfeggio_names"]
-	midi_to_name, name_to_midi = build_note_dictionaries(note_names)
-	chords = notes_data["chords"]
+	note_names = {} # Charger du JSON
+	midi_to_name, name_to_midi = build_note_dictionaries([]) # Charger du JSON
+	chords = {} # Charger du JSON
 
 	def foo0(midi_outputs):
 		print("henlo")
@@ -114,14 +80,8 @@ def main():
 
 	while True:
 		for e in gamepad.read():
-			#if e.ev_type not in ("Sync") and e.code not in ("ABS_X", "ABS_Y","ABS_RX", "ABS_RY"):
-			#	print(e.ev_type, e.code, e.state)
-			lower_code = e.code.lower()
-			if lower_code in mappings:
-				callbacks = mappings[lower_code]
-				state = bool(e.state)
-				if state in callbacks and callbacks[state] is not None:
-					callbacks[state]()
+			if e.ev_type not in ("Sync") and e.code not in ("ABS_X", "ABS_Y","ABS_RX", "ABS_RY"):
+				print(e.ev_type, e.code, e.state)
 
 if __name__ == "__main__":
 	main()
